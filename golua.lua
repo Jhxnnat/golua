@@ -1,30 +1,25 @@
 -- Game of Life Implementation
 -- 1: live cell; 0: dead cell;
+
 w = 10
 size = w*w
 grid = {}
 helper_grid = {}
 iterations = 100
--- fill grids
-for i = 1, size do
-	-- grid[i] = math.random(0, 1)
-	grid[i] = 0
-	helper_grid[i] = 0
-end
-grid[26] = 1
-grid[35] = 1
-grid[36] = 1
-grid[46] = 1
-grid[47] = 1
 
-function shallowCopy(original)
-    local copy = {}
-    for key, value in pairs(original) do
-        copy[key] = value
-    end
-    return copy
-end
+function fill_grids()
+	for i = 1, size do
+		grid[i] = 0
+		helper_grid[i] = 0
+	end
 
+	local center = (w * (w/2 - 1)) + (w / 2)
+	grid[center] = 1
+	grid[center+w-1] = 1
+	grid[center+w] = 1
+	grid[center+w+w] = 1
+	grid[center+w+w+1] = 1
+end
 
 function on_edge(index)
 	if index <= w+1 then return true end
@@ -52,8 +47,7 @@ function print_grid()
 end
 
 function check_around(index)
-	-- dont actually need that since edge are not checked in the first place
-	-- if index <= 5 or index >= size+1-5 then return 0 end
+	-- we dont need that since edge are not checked in the first place
 	local i = 0
 	i = i + grid[index-w] --top
 	i = i + grid[index-w+1] --top right
@@ -66,7 +60,7 @@ function check_around(index)
 	return i
 end
 
-function perform(amount, value)
+function perform(amount, value) --check if cells should die, born or remain
 	-- Any live cell with fewer than two live neighbours dies, as if by underpopulation.
 	-- Any live cell with two or three live neighbours lives on to the next generation.
 	-- Any live cell with more than three live neighbours dies, as if by overpopulation.
@@ -81,7 +75,7 @@ function perform(amount, value)
 	return value
 end
 
-function cycle()
+function cycle() --do the life cycle
 	for i = w+1, size-w do
 		if not on_edge(i) then
 			local neighbours = check_around(i)
@@ -91,14 +85,37 @@ function cycle()
 	table.move(helper_grid, 1, #helper_grid, 1, grid)
 end
 
+automode = false
+reset = false
+quit = false
+
+function read_input(opt)
+	if opt == 'a' then automode = true
+	elseif opt == 'r' then reset = true
+	elseif opt == 'q' then quit = true end
+end
+
 function loop() 
+	fill_grids()
 	for i = 0, iterations do
-		os.execute("clear")
-		print_grid()
-		os.execute("sleep 0.4")
-		cycle()
-		print()
-		--local wait = io.read()
+		if quit then break end
+		if reset then
+			reset = false
+			fill_grids()
+			i = 0
+		else
+			os.execute("clear")
+			print_grid()
+			cycle()
+			if not automode then
+				print()
+				io.write(">> a: automode; r: reset; q: quit; \notherwise continue-> ")
+				local wait = io.read()
+				read_input(wait)
+			else
+				os.execute("sleep 0.4")
+			end
+		end
 	end
 end
 
